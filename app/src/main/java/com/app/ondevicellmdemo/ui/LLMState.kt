@@ -6,12 +6,14 @@ import androidx.compose.runtime.toMutableStateList
 sealed class LLMState {
     data object LLMModelLoading : LLMState()
     data object LLMModelLoaded : LLMState()
+    data class LLMModelFailedToLoad(val message: String) : LLMState()
     data object LLMResponseLoading : LLMState()
     data object LLMResponseLoaded : LLMState()
 
     // Make val to check the state
     val isLLMModelLoading get() = this is LLMModelLoading
     val isLLMResponseLoading get() = this is LLMResponseLoading
+    val isLLMModelFailedToLoad get() = this is LLMModelFailedToLoad
 }
 
 class ChatState(

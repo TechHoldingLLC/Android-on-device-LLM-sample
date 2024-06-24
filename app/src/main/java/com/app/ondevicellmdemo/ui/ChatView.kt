@@ -42,6 +42,7 @@ fun ChatView(
     LaunchedEffect(Unit) {
         chatViewModel.initLLMModel()
     }
+
     Surface {
         Scaffold(
             modifier = Modifier
@@ -50,7 +51,12 @@ fun ChatView(
         ) { innerPadding ->
             if (llmState.value.isLLMModelLoading) {
                 LoadingView()
-            } else {
+            } else if (llmState.value.isLLMModelFailedToLoad)
+                LoadingView(
+                    (llmState.value as LLMState.LLMModelFailedToLoad).message,
+                    isLoading = false
+                )
+            else {
                 ChatContent(
                     chatState.value.chatMessages,
                     llmState.value.isLLMResponseLoading,
@@ -63,15 +69,19 @@ fun ChatView(
 }
 
 @Composable
-fun LoadingView() {
+fun LoadingView(
+    message: String = "Loading model...",
+    isLoading: Boolean = true
+) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            CircularProgressIndicator()
+            if (isLoading)
+                CircularProgressIndicator()
             Spacer(modifier = Modifier.padding(8.dp))
-            Text(text = "Loading model...")
+            Text(text = message)
         }
     }
 }

@@ -6,6 +6,7 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import java.io.File
 
 class LLMTask(context: Context) {
     private val _partialResults = MutableSharedFlow<Pair<String, Boolean>>(
@@ -15,7 +16,15 @@ class LLMTask(context: Context) {
     val partialResults: SharedFlow<Pair<String, Boolean>> = _partialResults.asSharedFlow()
     private var llmInference: LlmInference
 
+    private val modelExists: Boolean
+        get() = File(MODEL_PATH).exists()
+
     init {
+
+        if (!modelExists) {
+            throw IllegalArgumentException("Model not found at path: $MODEL_PATH")
+        }
+
         val options = LlmInference.LlmInferenceOptions.builder()
             .setModelPath(MODEL_PATH)
             .setMaxTokens(2048)

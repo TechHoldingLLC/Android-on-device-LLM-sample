@@ -26,10 +26,13 @@ class ChatViewModel @Inject constructor(@ApplicationContext private val context:
 
     fun initLLMModel() {
         viewModelScope.launch(Dispatchers.IO) {
-            _llmState.emit(LLMState.LLMModelLoading)
-            LLMTask.getInstance(context)
-        }.invokeOnCompletion {
-            _llmState.value = LLMState.LLMModelLoaded
+            try {
+                _llmState.emit(LLMState.LLMModelLoading)
+                LLMTask.getInstance(context)
+                _llmState.emit(LLMState.LLMModelLoaded)
+            } catch (e: Exception) {
+                _llmState.emit(LLMState.LLMModelFailedToLoad(e.localizedMessage ?: "Unknown Error"))
+            }
         }
     }
 
@@ -40,27 +43,26 @@ class ChatViewModel @Inject constructor(@ApplicationContext private val context:
                 _llmState.emit(LLMState.LLMResponseLoading)
                 var currentLLMResponseId: String? = _chatState.value.createLLMLoadingMessage()
                 LLMTask.getInstance(context).generateResponse(_chatState.value.fullPrompt)
-                LLMTask.getInstance(context).partialResults
-                    .collectIndexed { index, (partialResult, done) ->
-                        currentLLMResponseId?.let { id ->
-                            if (index == 0) {
-                                _chatState.value.appendFirstLLMResponse(
-                                    id,
-                                    partialResult
-                                )
-                            } else {
-                                _chatState.value.appendLLMResponse(
-                                    id,
-                                    partialResult,
-                                    done
-                                )
-                            }
-                            if (done) {
-                                _llmState.emit(LLMState.LLMResponseLoaded)
-                                currentLLMResponseId = null
-                            }
+                LLMTask.getInstance(context).partialResults?.collectIndexed { index, (partialResult, done) ->
+                    currentLLMResponseId?.let { id ->
+                        if (index == 0) {
+                            _chatState.value.appendFirstLLMResponse(
+                                id,
+                                partialResult
+                            )
+                        } else {
+                            _chatState.value.appendLLMResponse(
+                                id,
+                                partialResult,
+                                done
+                            )
+                        }
+                        if (done) {
+                            _llmState.emit(LLMState.LLMResponseLoaded)
+                            currentLLMResponseId = null
                         }
                     }
+                }
 
             } catch (e: Exception) {
                 _chatState.value.addErrorLLMResponse(e)
